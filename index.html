@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用药提醒小助手 · 交互原型</title>
+<style>
+  :root{
+    --primary:#0F7B5F;
+    --primary-dark:#0A5C47;
+    --primary-soft:#E3F2ED;
+    --orange:#E8590C;
+    --orange-soft:#FFF0E6;
+    --red:#C92A2A;
+    --red-soft:#FDECEC;
+    --amber:#B7791F;
+    --amber-soft:#FFF7E0;
+    --ink:#212529;
+    --ink-2:#5C636B;
+    --line:#E9E4DB;
+    --bg:#F7F4EF;
+    --card:#FFFFFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:linear-gradient(160deg,#E8EAF0 0%,#DDE3EA 100%);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:32px 16px;color:var(--ink);
+  }
+
+  /* ---------- 手机壳 ---------- */
+  .phone{
+    width:400px;height:860px;background:#111;border-radius:52px;padding:12px;
+    box-shadow:0 30px 60px rgba(15,23,42,.35);flex:none;position:relative;
+  }
+  .viewport{
+    width:100%;height:100%;background:var(--bg);border-radius:42px;overflow:hidden;
+    position:relative;display:flex;flex-direction:column;
+  }
+  .statusbar{
+    height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;
+    padding:0 26px;font-size:14px;font-weight:600;background:var(--bg);z-index:5;
+  }
+  .app{flex:1;position:relative;overflow:hidden;}
+
+  /* ---------- 页面 ---------- */
+  .screen{
+    position:absolute;inset:0;overflow-y:auto;padding:14px 16px 96px;
+    display:none;background:var(--bg);
+  }
+  .screen.active{display:block;}
+  .screen::-webkit-scrollbar{width:0;}
+
+  .page-title{font-size:24px;font-weight:700;margin:6px 0 2px;}
+  .page-sub{font-size:15px;color:var(--ink-2);margin-bottom:14px;}
+
+  .card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(31,41,51,.05);}
+  .card-title{font-size:21px;font-weight:700;margin-bottom:8px;}
+
+  /* ---------- 按钮 ---------- */
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    min-height:56px;border:none;border-radius:14px;font-size:19px;font-weight:600;
+    cursor:pointer;font-family:inherit;transition:transform .06s ease,opacity .15s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-orange{background:var(--orange);color:#fff;}
+  .btn-ghost{background:#fff;color:var(--primary-dark);border:2px solid var(--primary);}
+  .btn-gray{background:#EFECE6;color:var(--ink-2);}
+  .btn-danger-ghost{background:#fff;color:var(--red);border:2px solid #F1C0C0;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-sm{min-height:44px;font-size:16px;width:auto;padding:0 18px;border-radius:12px;}
+
+  /* ---------- 底部导航 ---------- */
+  .tabbar{
+    flex:none;height:76px;background:#fff;border-top:1px solid var(--line);
+    display:flex;align-items:stretch;z-index:6;
+  }
+  .tabbar.hidden{display:none;}
+  .tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    font-size:15px;color:#9AA1A9;cursor:pointer;border:none;background:none;font-family:inherit;
+  }
+  .tab svg{width:27px;height:27px;}
+  .tab.active{color:var(--primary-dark);font-weight:700;}
+
+  /* ---------- 首页 ---------- */
+  .hello{margin:4px 0 14px;}
+  .hello .date{font-size:18px;color:var(--ink-2);}
+  .hello .name{font-size:28px;font-weight:700;margin-top:2px;}
+  .next-card{background:var(--orange);color:#fff;border-radius:18px;padding:18px;margin-bottom:12px;}
+  .next-card .t{font-size:20px;opacity:.92;}
+  .next-card .big{font-size:30px;font-weight:800;margin:4px 0 12px;}
+  .next-card .btn{background:#fff;color:var(--orange);min-height:50px;font-size:18px;}
+  .done-card{background:var(--primary);color:#fff;border-radius:18px;padding:20px;margin-bottom:12px;font-size:20px;font-weight:700;text-align:center;}
+
+  .timeline-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);}
+  .timeline-item:last-child{border-bottom:none;}
+  .tl-time{width:72px;flex:none;font-size:22px;font-weight:700;}
+  .tl-time small{display:block;font-size:16px;color:var(--ink-2);font-weight:400;}
+  .tl-body{flex:1;}
+  .tl-title{font-size:21px;font-weight:600;margin-bottom:4px;}
+  .tl-meds{font-size:18px;color:var(--ink-2);line-height:1.6;}
+  .chip{display:inline-block;padding:3px 12px;border-radius:999px;font-size:16px;font-weight:600;}
+  .chip-green{background:var(--primary-soft);color:var(--primary-dark);}
+  .chip-orange{background:var(--orange-soft);color:var(--orange);}
+  .chip-red{background:var(--red-soft);color:var(--red);}
+  .chip-gray{background:#EFECE6;color:var(--ink-2);}
+
+  /* ---------- 首页录入大按钮 ---------- */
+  .entry-title{font-size:22px;font-weight:700;margin:18px 2px 10px;}
+  .entry-btn{
+    display:flex;align-items:center;gap:18px;width:100%;background:#fff;border:none;
+    border-radius:20px;padding:22px 20px;margin-bottom:14px;cursor:pointer;font-family:inherit;
+    box-shadow:0 3px 12px rgba(31,41,51,.07);text-align:left;transition:transform .06s ease;
+  }
+  .entry-btn:active{transform:scale(.98);}
+  .entry-btn .ic{
+    width:66px;height:66px;border-radius:18px;flex:none;display:flex;align-items:center;justify-content:center;
+  }
+  .entry-btn .ic svg{width:36px;height:36px;}
+  .entry-btn .mt{font-size:24px;font-weight:800;color:var(--ink);}
+  .entry-btn .ms{font-size:17px;color:var(--ink-2);margin-top:3px;}
+  .entry-btn .arrow{margin-left:auto;font-size:26px;color:#C3C9CF;flex:none;}
+
+  /* ---------- 录入流程 ---------- */
+  .sub-head{display:flex;align-items:center;gap:10px;margin:4px 0 16px;}
+  .back-btn{
+    width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid var(--line);
+    font-size:22px;cursor:pointer;color:var(--ink);flex:none;font-family:inherit;
+  }
+  .sub-head .st{font-size:22px;font-weight:700;}
+
+  .camera-box{
+    background:#20242A;border-radius:18px;height:340px;position:relative;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+  }
+  .camera-box .frame{
+    width:250px;height:200px;border:3px dashed rgba(255,255,255,.75);border-radius:14px;
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;text-align:center;line-height:1.7;
+  }
+  .shutter{
+    width:74px;height:74px;border-radius:50%;background:#fff;border:5px solid var(--primary);
+    margin:0 auto;display:block;cursor:pointer;
+  }
+  .loading-box{text-align:center;padding:70px 0;}
+  .spinner{
+    width:54px;height:54px;border:5px solid var(--primary-soft);border-top-color:var(--primary);
+    border-radius:50%;margin:0 auto 18px;animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-box .lt{font-size:20px;font-weight:600;}
+  .loading-box .ls{font-size:15px;color:var(--ink-2);margin-top:6px;}
+
+  .field-row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .field-row:last-child{border-bottom:none;}
+  .field-row .fk{font-size:16px;color:var(--ink-2);flex:none;}
+  .field-row .fv{font-size:17px;font-weight:600;text-align:right;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .mini-tag{font-size:12.5px;padding:2px 8px;border-radius:6px;font-weight:600;}
+  .tag-ok{background:var(--primary-soft);color:var(--primary-dark);}
+  .tag-warn{background:var(--orange-soft);color:var(--orange);}
+  .tag-src{background:#EDF2F7;color:#4A5568;}
+
+  .safety-note{
+    background:var(--orange-soft);border-radius:12px;padding:12px 14px;font-size:14.5px;
+    color:#9A4B12;line-height:1.65;margin:12px 0;
+  }
+  .safety-note b{color:var(--orange);}
+
+  .mic-btn{
+    width:130px;height:130px;border-radius:50%;background:var(--primary);border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;margin:36px auto 20px;
+    box-shadow:0 10px 26px rgba(15,123,95,.35);
+  }
+  .mic-btn svg{width:56px;height:56px;color:#fff;}
+  .voice-hint{text-align:center;font-size:18px;color:var(--ink-2);margin-bottom:20px;}
+  .bubble{
+    background:#fff;border-radius:16px;padding:16px;font-size:19px;line-height:1.7;
+    box-shadow:0 2px 8px rgba(31,41,51,.06);margin-bottom:12px;
+  }
+  .bubble .who{font-size:13.5px;color:var(--ink-2);margin-bottom:6px;}
+
+  /* ---------- 提醒浮层 ---------- */
+  .overlay{
+    position:absolute;inset:0;background:rgba(20,24,28,.55);z-index:20;display:none;
+    align-items:flex-end;justify-content:center;
+  }
+  .overlay.show{display:flex;}
+  .overlay-center{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(20,24,28,.6);z-index:21;}
+  .overlay-center.show{display:flex;}
+
+  .reminder-sheet{
+    width:100%;background:#fff;border-radius:28px 28px 0 0;padding:26px 20px 30px;text-align:center;
+    animation:up .25s ease;
+  }
+  @keyframes up{from{transform:translateY(60px);opacity:.4;}to{transform:none;opacity:1;}}
+  .reminder-sheet .r-time{font-size:40px;font-weight:800;color:var(--orange);}
+  .reminder-sheet .r-title{font-size:26px;font-weight:800;margin:6px 0 4px;}
+  .reminder-sheet .r-sub{font-size:16px;color:var(--ink-2);margin-bottom:16px;}
+  .r-med{
+    background:var(--orange-soft);border-radius:14px;padding:14px 16px;margin-bottom:10px;
+    display:flex;justify-content:space-between;align-items:center;text-align:left;
+  }
+  .r-med .rn{font-size:19px;font-weight:700;}
+  .r-med .rd{font-size:15px;color:var(--ink-2);margin-top:2px;}
+  .r-med .rq{font-size:24px;font-weight:800;color:var(--orange);flex:none;}
+  .reminder-sheet .btn{margin-top:10px;}
+
+  /* ---------- 方案确认面板 ---------- */
+  .plan-sheet{
+    width:100%;max-width:380px;background:#fff;border-radius:22px;padding:22px 20px;
+    animation:up .22s ease;max-height:88%;overflow-y:auto;
+  }
+  .plan-sheet h3{font-size:21px;margin-bottom:4px;}
+  .plan-sheet .ps-sub{font-size:14.5px;color:var(--ink-2);margin-bottom:8px;line-height:1.6;}
+
+  /* ---------- 家人端 ---------- */
+  .family-banner{
+    background:var(--primary-soft);border-radius:14px;padding:12px 14px;font-size:14.5px;
+    color:var(--primary-dark);line-height:1.6;margin-bottom:12px;
+  }
+  .sum-row{display:flex;gap:10px;margin-bottom:12px;}
+  .sum-box{flex:1;background:#fff;border-radius:14px;padding:14px 10px;text-align:center;}
+  .sum-box .n{font-size:26px;font-weight:800;}
+  .sum-box .l{font-size:14px;color:var(--ink-2);margin-top:2px;}
+
+  .med-card{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;}
+  .med-card .mn{font-size:19px;font-weight:700;margin-bottom:4px;}
+  .med-card .md{font-size:15px;color:var(--ink-2);line-height:1.55;}
+
+  .rec-date{font-size:16px;font-weight:700;color:var(--ink-2);margin:14px 2px 8px;}
+  .rec-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .rec-item:last-child{border-bottom:none;}
+  .rec-time{width:56px;font-size:17px;font-weight:700;flex:none;}
+  .rec-body{flex:1;}
+  .rec-name{font-size:17px;font-weight:600;}
+  .rec-dose{font-size:14.5px;color:var(--ink-2);}
+
+  /* ---------- 详情 ---------- */
+  .detail-status{padding:12px 14px;border-radius:12px;font-size:15.5px;line-height:1.6;margin-bottom:12px;}
+  .ds-ok{background:var(--primary-soft);color:var(--primary-dark);}
+  .ds-warn{background:var(--amber-soft);color:var(--amber);}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:absolute;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);
+    background:rgba(30,35,40,.92);color:#fff;font-size:16px;padding:12px 20px;border-radius:12px;
+    opacity:0;pointer-events:none;transition:all .25s ease;z-index:40;max-width:86%;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+  <!-- 手机 -->
+  <div class="phone">
+    <div class="viewport">
+      <div class="statusbar"><span>08:00</span><span>92%</span></div>
+
+      <div class="app">
+
+        <!-- ========== 今天 ========== -->
+        <section class="screen active" id="screen-home">
+          <div class="hello">
+            <div class="date">10月11日 星期六</div>
+            <div class="name">王大爷，别忘了吃药</div>
+          </div>
+          <div id="homeNext"></div>
+
+          <div class="entry-title">记录药品</div>
+          <button class="entry-btn" onclick="openAdd('photo')">
+            <div class="ic" style="background:var(--primary-soft);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary-dark)" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7 10 4.5h4L15.5 7"/></svg>
+            </div>
+            <div>
+              <div class="mt">拍照识别</div>
+              <div class="ms">拍药盒或处方，自动读取信息</div>
+            </div>
+            <div class="arrow">›</div>
+          </button>
+          <button class="entry-btn" onclick="openAdd('voice')">
+            <div class="ic" style="background:var(--orange-soft);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>
+            </div>
+            <div>
+              <div class="mt">语音输入</div>
+              <div class="ms">直接说“我每天早上吃一片某某药”</div>
+            </div>
+            <div class="arrow">›</div>
+          </button>
+
+          <div class="card">
+            <div class="card-title">今天的用药安排</div>
+            <div id="homeTimeline"></div>
+          </div>
+        </section>
+
+        <!-- ========== 家人 ========== -->
+        <section class="screen" id="screen-family">
+          <div class="page-title">家人协助</div>
+          <div class="page-sub">王大爷的用药情况</div>
+          <div class="family-banner">已获得 <b>王大爷</b> 授权查看服药记录。家人可协助录入、核对药品信息；用药方案确认后才会启用提醒。</div>
+          <div class="sum-row" id="familySum"></div>
+          <div class="card">
+            <div class="card-title">药品记录</div>
+            <div id="familyMeds"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">服药记录</div>
+            <div id="familyRecords"></div>
+          </div>
+        </section>
+
+        <!-- ========== 药品详情 ========== -->
+        <section class="screen" id="screen-detail">
+          <div class="sub-head">
+            <button class="back-btn" onclick="setTab('family')">←</button>
+            <div class="st">药品档案</div>
+          </div>
+          <div id="detailBody"></div>
+        </section>
+
+        <!-- ========== 添加药品 ========== -->
+        <section class="screen" id="screen-add">
+          <div class="sub-head">
+            <button class="back-btn" onclick="addBack()">←</button>
+            <div class="st" id="addTitle">添加药品</div>
+          </div>
+
+          <!-- 拍照 -->
+          <div class="add-step" id="step-photo" style="display:none;">
+            <div class="camera-box">
+              <div class="frame">将药盒正面放入框内<br>保持光线充足</div>
+            </div>
+            <button class="shutter" onclick="startPhoto()" aria-label="拍照"></button>
+            <div style="text-align:center;font-size:15px;color:var(--ink-2);margin-top:12px;">点击白色按钮拍照</div>
+          </div>
+
+          <!-- 识别中 -->
+          <div class="add-step" id="step-photo-loading" style="display:none;">
+            <div class="loading-box">
+              <div class="spinner"></div>
+              <div class="lt">正在识别药品信息…</div>
+              <div class="ls">读取药名、规格和说明书用法</div>
+            </div>
+          </div>
+
+          <!-- 识别结果 -->
+          <div class="add-step" id="step-photo-result" style="display:none;">
+            <div class="card">
+              <div class="card-title">识别结果</div>
+              <div class="field-row"><span class="fk">药品名称</span><span class="fv">阿托伐他汀钙片 <span class="mini-tag tag-ok">已识别</span></span></div>
+              <div class="field-row"><span class="fk">包装规格</span><span class="fv">20mg × 7 片 <span class="mini-tag tag-ok">已识别</span></span></div>
+              <div class="field-row"><span class="fk">说明书用法</span><span class="fv">口服，常用量每晚 1 片 <span class="mini-tag tag-src">来自说明书</span></span></div>
+              <div class="field-row"><span class="fk">您的处方剂量</span><span class="fv" style="color:var(--orange);">不明确 <span class="mini-tag tag-warn">待确认</span></span></div>
+              <div class="field-row"><span class="fk">服用时间</span><span class="fv" style="color:var(--orange);">不明确 <span class="mini-tag tag-warn">待确认</span></span></div>
+            </div>
+            <button class="btn btn-ghost" style="margin-bottom:10px;" onclick="speakPhotoResult()">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4h3.5L12 18V6l-4.5 4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M17.8 6.8a7.4 7.4 0 0 1 0 10.4"/></svg>
+              再听一遍识别结果
+            </button>
+            <div class="safety-note">
+              <b>识别 ≠ 确认。</b>说明书上的常见用法不一定等于医生给您的处方。剂量和频次确认后才会启用服药提醒。
+            </div>
+            <button class="btn btn-primary" onclick="savePhotoMed(true)">补充剂量，确认方案</button>
+            <div style="height:10px;"></div>
+            <button class="btn btn-gray" onclick="savePhotoMed(false)">先存入药品档案（暂不提醒）</button>
+          </div>
+
+          <!-- 语音 -->
+          <div class="add-step" id="step-voice" style="display:none;">
+            <button class="mic-btn" onclick="startVoice()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>
+            </button>
+            <div class="voice-hint">点击按钮开始说话</div>
+            <div class="bubble" style="background:#F1EEE8;color:var(--ink-2);font-size:16px;">
+              可以这样说：<br>“我每天晚上吃一片阿司匹林”
+            </div>
+          </div>
+
+          <!-- 语音识别中 -->
+          <div class="add-step" id="step-voice-loading" style="display:none;">
+            <div class="loading-box">
+              <div class="spinner"></div>
+              <div class="lt">正在听您说话…</div>
+              <div class="ls">请把话说完</div>
+            </div>
+          </div>
+
+          <!-- 语音结果 -->
+          <div class="add-step" id="step-voice-result" style="display:none;">
+            <div class="bubble">
+              <div class="who">您说：</div>
+              “我每天晚上吃一片阿司匹林。”
+            </div>
+            <div class="card">
+              <div class="card-title">为您整理如下</div>
+              <div class="field-row"><span class="fk">药品</span><span class="fv">阿司匹林肠溶片 <span class="mini-tag tag-ok">已识别</span></span></div>
+              <div class="field-row"><span class="fk">每次剂量</span><span class="fv">1 片 <span class="mini-tag tag-ok">已识别</span></span></div>
+              <div class="field-row"><span class="fk">服用时间</span><span class="fv">每天晚上 18:00 <span class="mini-tag tag-ok">已识别</span></span></div>
+            </div>
+            <button class="btn btn-ghost" style="margin-bottom:10px;" onclick="speakVoiceResult()">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4h3.5L12 18V6l-4.5 4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M17.8 6.8a7.4 7.4 0 0 1 0 10.4"/></svg>
+              再听一遍识别结果
+            </button>
+            <div class="safety-note">确认后将按此方案启用提醒。如果和医生处方不一致，请先咨询医生或药师。</div>
+            <button class="btn btn-primary" onclick="confirmVoice()">确认，启用提醒</button>
+            <div style="height:10px;"></div>
+            <button class="btn btn-gray" onclick="showStep('voice',true)">重新说一遍</button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- 底部导航 -->
+      <nav class="tabbar" id="tabbar">
+        <button class="tab active" id="tab-home" onclick="setTab('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg>
+          今天
+        </button>
+        <button class="tab" id="tab-family" onclick="setTab('family')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.8" cy="9.5" r="2.6"/><path d="M15.8 14.7c2.4.2 4.2 1.9 4.7 4.8"/></svg>
+          家人
+        </button>
+      </nav>
+
+      <!-- 提醒浮层 -->
+      <div class="overlay" id="reminderOverlay">
+        <div class="reminder-sheet">
+          <div class="r-time">18:00</div>
+          <div class="r-title">该吃药了</div>
+          <div class="r-sub" style="display:flex;align-items:center;justify-content:center;gap:6px;color:var(--orange);font-weight:600;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4h3.5L12 18V6l-4.5 4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M17.8 6.8a7.4 7.4 0 0 1 0 10.4"/></svg>
+            正在语音播报
+          </div>
+          <div class="r-sub">请查看您的用药计划，确认后再点「已服用」</div>
+          <div id="reminderMeds"></div>
+          <button class="btn btn-primary" style="min-height:62px;font-size:22px;" onclick="reminderAction('taken')">已服用</button>
+          <button class="btn btn-ghost" onclick="reminderAction('snooze')">稍后提醒（10 分钟后）</button>
+          <button class="btn btn-danger-ghost" onclick="reminderAction('skip')">暂未服用</button>
+        </div>
+      </div>
+
+      <!-- 方案确认面板（语音补充剂量） -->
+      <div class="overlay-center" id="planOverlay">
+        <div class="plan-sheet">
+          <h3 id="planMedName">确认用药方案</h3>
+          <div class="ps-sub">请说出这味药的剂量和时间，AI 识别后启用提醒。</div>
+          <div id="planStepIdle">
+            <button class="mic-btn" style="margin:18px auto 14px;" onclick="startPlanVoice()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>
+            </button>
+            <div class="voice-hint">点击后说，例如“每次吃 10 丸，一天三次”</div>
+          </div>
+          <div id="planStepListening" style="display:none;">
+            <div class="loading-box" style="padding:36px 0;">
+              <div class="spinner"></div>
+              <div class="lt">正在听您说话…</div>
+              <div class="ls">请把话说完</div>
+            </div>
+          </div>
+          <div id="planStepResult" style="display:none;">
+            <div class="bubble"><div class="who">您说：</div><span id="planSay"></span></div>
+            <div class="card" style="box-shadow:none;border:1.5px solid var(--line);margin-bottom:12px;">
+              <div class="field-row"><span class="fk">每次服用量</span><span class="fv" id="planRDose"></span></div>
+              <div class="field-row"><span class="fk">服用频次</span><span class="fv" id="planRFreq"></span></div>
+              <div class="field-row"><span class="fk">服用时间</span><span class="fv" id="planRTimes"></span></div>
+            </div>
+            <button class="btn btn-primary" onclick="confirmPlan()">确认无误，启用提醒</button>
+            <div style="height:10px;"></div>
+            <button class="btn btn-gray" onclick="setPlanStep('idle')">重新说一遍</button>
+          </div>
+          <div style="height:10px;"></div>
+          <button class="btn btn-gray" onclick="closePlan()">取消</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+<script>
+/* ================= 数据 ================= */
+const state = {
+  meds: [
+    { id:1, name:'二甲双胍缓释片', spec:'0.5g × 30 片', dose:'1 片', freq:'每天 2 次',
+      times:['08:00','18:00'], note:'随餐服用', source:'处方单（家人核对）', status:'confirmed' },
+    { id:2, name:'氨氯地平缓释片', spec:'5mg × 28 片', dose:'1 片', freq:'每天 1 次',
+      times:['08:00'], note:'每天早上服用', source:'药盒 + 语音记录（家人已确认）', status:'confirmed' },
+    { id:3, name:'复方丹参滴丸', spec:'27mg × 180 丸', dose:'', freq:'',
+      times:[], note:'', source:'拍照识别（药盒包装）', status:'pending' },
+  ],
+  records: [
+    { date:'今天', time:'08:00', med:'二甲双胍缓释片', dose:'1 片', status:'taken' },
+    { date:'今天', time:'08:00', med:'氨氯地平缓释片', dose:'1 片', status:'taken' },
+    { date:'昨天', time:'18:00', med:'二甲双胍缓释片', dose:'1 片', status:'taken' },
+    { date:'昨天', time:'08:00', med:'二甲双胍缓释片', dose:'1 片', status:'taken' },
+    { date:'昨天', time:'08:00', med:'氨氯地平缓释片', dose:'1 片', status:'not_taken' },
+  ],
+  eveningDone:false,
+  nextId:4,
+};
+
+let currentTab = 'home';
+let currentDetailId = null;
+let planMedId = null;
+let addStepStack = [];
+
+const $ = id => document.getElementById(id);
+
+/* ================= 通用 ================= */
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+  const isMain = id==='screen-home' || id==='screen-family';
+  $('tabbar').classList.toggle('hidden', !isMain);
+}
+
+function setTab(name){
+  stopSpeak();
+  currentTab = name;
+  ['home','family'].forEach(n=>{
+    $('tab-'+n).classList.toggle('active', n===name);
+  });
+  renderAll();
+  showScreen('screen-'+name);
+}
+
+function statusChip(med){
+  return med.status==='confirmed'
+    ? '<span class="chip chip-green">已确认 · 提醒中</span>'
+    : '<span class="chip chip-orange">待确认 · 未启用提醒</span>';
+}
+
+function medLine(med){
+  return `${med.name} · 每次 ${med.dose}`;
+}
+
+/* ================= 首页 ================= */
+function eveningMeds(){
+  return state.meds.filter(m=>m.status==='confirmed' && m.times.includes('18:00'));
+}
+
+function renderHome(){
+  const list = eveningMeds();
+  const next = $('homeNext');
+  if(state.eveningDone){
+    next.innerHTML = '<div class="done-card">今天的药都吃完了，真棒！</div>';
+  }else{
+    next.innerHTML = `
+      <div class="next-card">
+        <div class="t">下次用药 · 今天 18:00</div>
+        <div class="big">${list.length} 种药等着您</div>
+        <button class="btn" onclick="openReminder()">模拟到点提醒（演示）</button>
+      </div>`;
+  }
+
+  const eveningHtml = list.length
+    ? list.map(m=>`<div>${medLine(m)}</div>`).join('')
+    : '<div>暂无已确认的药品</div>';
+  $('homeTimeline').innerHTML = `
+    <div class="timeline-item">
+      <div class="tl-time">08:00<small>早上</small></div>
+      <div class="tl-body">
+        <div class="tl-title">早间用药 <span class="chip chip-green">已服用</span></div>
+        <div class="tl-meds">二甲双胍缓释片 · 每次 1 片<div>氨氯地平缓释片 · 每次 1 片</div></div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-time">18:00<small>晚上</small></div>
+      <div class="tl-body">
+        <div class="tl-title">晚间用药 ${state.eveningDone
+          ? '<span class="chip chip-green">已服用</span>'
+          : '<span class="chip chip-orange">待服用</span>'}</div>
+        <div class="tl-meds">${eveningHtml}</div>
+      </div>
+    </div>`;
+}
+
+/* ================= 提醒 ================= */
+function openReminder(){
+  const list = eveningMeds();
+  if(!list.length){ toast('当前没有已确认的晚间用药'); return; }
+  $('reminderMeds').innerHTML = list.map(m=>`
+    <div class="r-med">
+      <div>
+        <div class="rn">${m.name}</div>
+        <div class="rd">${m.note || m.freq}</div>
+      </div>
+      <div class="rq">${m.dose}</div>
+    </div>`).join('');
+  $('reminderOverlay').classList.add('show');
+  speak('现在是晚上 6 点，该吃药了。晚上的药：' +
+    list.map(m=> m.name + '，每次 ' + m.dose).join('；') +
+    '。请核对后点击已服用。');
+}
+
+function reminderAction(type){
+  $('reminderOverlay').classList.remove('show');
+  stopSpeak();
+  const list = eveningMeds();
+  if(type==='taken'){
+    list.forEach(m=>state.records.unshift({date:'今天',time:'18:00',med:m.name,dose:m.dose,status:'taken'}));
+    state.eveningDone = true;
+    toast('已记录：您服用了 ' + list.length + ' 种药');
+    speak('好的，已记录您服用了 ' + list.length + ' 种药');
+  }else if(type==='snooze'){
+    toast('好的，10 分钟后再提醒您');
+    speak('好的，10 分钟后再提醒您');
+  }else{
+    list.forEach(m=>state.records.unshift({date:'今天',time:'18:00',med:m.name,dose:m.dose,status:'not_taken'}));
+    toast('已记录为暂未服用，家人可以查看到');
+    speak('已记录为暂未服用，家人可以查看到');
+  }
+  renderAll();
+}
+
+/* ================= 家人端 ================= */
+function recChip(s){
+  if(s==='taken') return '<span class="chip chip-green">已服用</span>';
+  if(s==='snooze') return '<span class="chip chip-orange">稍后提醒</span>';
+  return '<span class="chip chip-red">未服用</span>';
+}
+
+function renderFamily(){
+  const takenToday = state.records.filter(r=>r.date==='今天' && r.status==='taken').length;
+  const pending = state.meds.filter(m=>m.status==='pending').length;
+  $('familySum').innerHTML = `
+    <div class="sum-box"><div class="n" style="color:var(--primary-dark);">${takenToday}</div><div class="l">今日已服（次）</div></div>
+    <div class="sum-box"><div class="n" style="color:${state.eveningDone?'var(--primary-dark)':'var(--orange)'};">${state.eveningDone?'已完成':'未完成'}</div><div class="l">晚间用药</div></div>
+    <div class="sum-box"><div class="n" style="color:${pending?'var(--orange)':'var(--primary-dark)'};">${pending}</div><div class="l">待确认药品</div></div>`;
+
+  $('familyMeds').innerHTML = state.meds.map(m=>`
+    <div class="card med-card" style="margin-bottom:10px;" onclick="openDetail(${m.id})">
+      <div>
+        <div class="mn">${m.name}</div>
+        <div class="md">${m.status==='confirmed'
+          ? `每次 ${m.dose} · ${m.freq} · ${m.times.join('、')}`
+          : `${m.spec} · 剂量待确认`}</div>
+      </div>
+      <div style="text-align:right;flex:none;">
+        ${statusChip(m)}
+        ${m.status==='pending'
+          ? `<div style="margin-top:8px;"><button class="btn btn-sm btn-orange" onclick="event.stopPropagation();openPlan(${m.id})">帮确认方案</button></div>`
+          : ''}
+      </div>
+    </div>`).join('');
+
+  const groups = {};
+  state.records.forEach(r=>{ (groups[r.date] = groups[r.date]||[]).push(r); });
+  $('familyRecords').innerHTML = Object.keys(groups).map(d=>`
+    <div class="rec-date">${d}</div>
+    ${groups[d].map(r=>`
+      <div class="rec-item">
+        <div class="rec-time">${r.time}</div>
+        <div class="rec-body">
+          <div class="rec-name">${r.med}</div>
+          <div class="rec-dose">${r.dose}</div>
+        </div>
+        ${recChip(r.status)}
+      </div>`).join('')}`).join('');
+}
+
+/* ================= 药品详情 ================= */
+function openDetail(id){
+  currentDetailId = id;
+  renderDetail();
+  showScreen('screen-detail');
+}
+
+function renderDetail(){
+  const m = state.meds.find(x=>x.id===currentDetailId);
+  if(!m) return;
+  const rows = [
+    ['药品名称', m.name],
+    ['包装规格', m.spec],
+    ['每次服用量', m.dose || '<span style="color:var(--orange);">待确认</span>'],
+    ['服用频次', m.freq || '<span style="color:var(--orange);">待确认</span>'],
+    ['服用时间', m.times.length ? m.times.join('、') : '<span style="color:var(--orange);">待确认</span>'],
+    ['信息来源', `<span class="mini-tag tag-src">${m.source}</span>`],
+  ];
+  if(m.note) rows.push(['备注', m.note]);
+  $('detailBody').innerHTML = `
+    <div class="card">
+      <div style="font-size:22px;font-weight:800;margin-bottom:2px;">${m.name}</div>
+      <div style="margin:8px 0 4px;">${statusChip(m)}</div>
+    </div>
+    ${m.status==='pending'
+      ? '<div class="detail-status ds-warn">剂量和频次还没有确认，暂不会提醒。请按医生或药师的指导补充，或请家人帮忙确认。</div>'
+      : '<div class="detail-status ds-ok">用药方案已确认，会按时提醒您。</div>'}
+    <div class="card">
+      ${rows.map(([k,v])=>`<div class="field-row"><span class="fk">${k}</span><span class="fv">${v}</span></div>`).join('')}
+    </div>
+    ${m.status==='pending'
+      ? `<button class="btn btn-primary" onclick="openPlan(${m.id})">补充剂量，确认方案</button>
+         <div style="height:10px;"></div>`
+      : ''}
+    <button class="btn btn-gray" onclick="setTab('family')">返回列表</button>`;
+}
+
+/* ================= 添加药品 ================= */
+function openAdd(method){
+  addStepStack = [method];
+  showStep(method, true);
+  showScreen('screen-add');
+}
+
+function speakPhotoResult(){
+  speak('识别结果：阿托伐他汀钙片，20毫克乘7片。说明书用法为口服，常用量每晚1片。您的处方剂量和服用时间还不明确，需要确认。识别不等于确认。');
+}
+function speakVoiceResult(){
+  speak('您说：我每天晚上吃一片阿司匹林。为您整理如下：阿司匹林肠溶片，每次1片，每天晚上6点。确认后将按此方案启用提醒。');
+}
+
+function showStep(name, reset){
+  stopSpeak();
+  if(reset) addStepStack = [name];
+  else if(addStepStack[addStepStack.length-1]!==name) addStepStack.push(name);
+  document.querySelectorAll('.add-step').forEach(s=>s.style.display='none');
+  $('step-'+name).style.display='block';
+  $('addTitle').textContent = {
+    photo:'拍照识别', 'photo-loading':'拍照识别', 'photo-result':'核对识别结果',
+    voice:'语音输入', 'voice-loading':'语音输入', 'voice-result':'核对语音内容',
+  }[name] || '添加药品';
+}
+
+function addBack(){
+  addStepStack.pop();
+  const prev = addStepStack[addStepStack.length-1];
+  if(!prev){ setTab('home'); return; }
+  showStep(prev, true);
+}
+
+/* --- 拍照 --- */
+function startPhoto(){
+  showStep('photo-loading');
+  setTimeout(()=>{ showStep('photo-result'); speakPhotoResult(); }, 1400);
+}
+
+function savePhotoMed(fillNow){
+  const med = {
+    id: state.nextId++, name:'阿托伐他汀钙片', spec:'20mg × 7 片',
+    dose:'', freq:'', times:[], note:'',
+    source:'拍照识别（药盒包装）', status:'pending',
+  };
+  state.meds.push(med);
+  renderAll();
+  if(fillNow){
+    openPlan(med.id);
+  }else{
+    toast('已存入药品档案，提醒暂未启用');
+    setTab('home');
+  }
+}
+
+/* --- 语音 --- */
+function startVoice(){
+  showStep('voice-loading');
+  setTimeout(()=>{ showStep('voice-result'); speakVoiceResult(); }, 1600);
+}
+
+function confirmVoice(){
+  state.meds.push({
+    id: state.nextId++, name:'阿司匹林肠溶片', spec:'100mg × 30 片',
+    dose:'1 片', freq:'每天 1 次', times:['18:00'],
+    note:'每天晚上服用', source:'语音记录（本人确认）', status:'confirmed',
+  });
+  renderAll();
+  toast('已记录：阿司匹林肠溶片，每天晚上 1 片');
+  setTab('home');
+}
+
+/* ================= 语音播报 ================= */
+function speak(text){
+  try{
+    if(!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN';
+    u.rate = 0.95;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function stopSpeak(){
+  try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(e){}
+}
+
+/* ================= 方案确认（语音补充剂量） ================= */
+let planData = null;
+
+function planDemo(m){
+  if(m.name.includes('阿托伐他汀')){
+    return { say:'每次吃 1 片，每天晚上吃一次。', dose:'1 片', freq:'每天 1 次', times:['18:00'] };
+  }
+  return { say:'每次吃 10 丸，一天三次，早中晚。', dose:'10 丸', freq:'每天 3 次', times:['08:00','12:00','18:00'] };
+}
+
+function setPlanStep(s){
+  $('planStepIdle').style.display = s==='idle' ? 'block' : 'none';
+  $('planStepListening').style.display = s==='listening' ? 'block' : 'none';
+  $('planStepResult').style.display = s==='result' ? 'block' : 'none';
+}
+
+function openPlan(medId){
+  planMedId = medId;
+  planData = null;
+  const m = state.meds.find(x=>x.id===medId);
+  $('planMedName').textContent = '确认「' + m.name + '」的用药方案';
+  setPlanStep('idle');
+  $('planOverlay').classList.add('show');
+}
+
+function startPlanVoice(){
+  setPlanStep('listening');
+  setTimeout(()=>{
+    const m = state.meds.find(x=>x.id===planMedId);
+    planData = planDemo(m);
+    $('planSay').textContent = '“' + planData.say + '”';
+    $('planRDose').innerHTML = planData.dose + ' <span class="mini-tag tag-ok">已识别</span>';
+    $('planRFreq').innerHTML = planData.freq + ' <span class="mini-tag tag-ok">已识别</span>';
+    $('planRTimes').innerHTML = planData.times.join('、') + ' <span class="mini-tag tag-ok">已识别</span>';
+    setPlanStep('result');
+    speak('识别结果：每次 ' + planData.dose + '，' + planData.freq + '。确认无误请点确认。');
+  }, 1500);
+}
+
+function closePlan(){
+  $('planOverlay').classList.remove('show');
+  planMedId = null;
+  stopSpeak();
+}
+
+function confirmPlan(){
+  const m = state.meds.find(x=>x.id===planMedId);
+  if(!m || !planData) return closePlan();
+  m.dose = planData.dose;
+  m.freq = planData.freq;
+  m.times = planData.times;
+  m.status = 'confirmed';
+  m.source += ' · 方案已确认（语音）';
+  closePlan();
+  toast('方案已确认，提醒已启用');
+  speak('方案已确认，提醒已启用');
+  renderAll();
+  if(currentTab==='home'){
+    showScreen('screen-home');
+  }
+}
+
+/* ================= 渲染 ================= */
+function renderAll(){
+  renderHome();
+  renderFamily();
+  if(currentDetailId) renderDetail();
+}
+
+renderAll();
+</script>
+</body>
+</html>
