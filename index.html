@@ -175,6 +175,10 @@
     box-shadow:0 10px 26px rgba(15,123,95,.35);
   }
   .mic-btn svg{width:56px;height:56px;color:#fff;}
+  .mic-btn.recording{background:var(--orange);animation:micpulse 1.2s infinite;}
+  .text-input{width:100%;box-sizing:border-box;font-size:19px;line-height:1.5;padding:12px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;margin-bottom:12px;resize:vertical;}
+  @keyframes micpulse{0%{box-shadow:0 0 0 0 rgba(217,119,6,.45);}70%{box-shadow:0 0 0 26px rgba(217,119,6,0);}100%{box-shadow:0 0 0 0 rgba(217,119,6,0);}}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
   .voice-hint{text-align:center;font-size:18px;color:var(--ink-2);margin-bottom:20px;}
   .bubble{
     background:#fff;border-radius:16px;padding:16px;font-size:19px;line-height:1.7;
@@ -304,6 +308,39 @@
           <div class="family-banner">已获得 <b>王大爷</b> 授权查看服药记录。家人可协助录入、核对药品信息；用药方案确认后才会启用提醒。</div>
           <div class="sum-row" id="familySum"></div>
           <div class="card">
+            <div class="card-title">录入药品</div>
+            <button class="entry-btn" onclick="openAdd('photo')">
+              <div class="ic" style="background:var(--primary-soft);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary-dark)" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7 10 4.5h4L15.5 7"/></svg>
+              </div>
+              <div>
+                <div class="mt">拍照识别</div>
+                <div class="ms">拍药盒或处方，自动读取信息</div>
+              </div>
+              <div class="arrow">›</div>
+            </button>
+            <button class="entry-btn" onclick="openAdd('voice')">
+              <div class="ic" style="background:var(--orange-soft);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>
+              </div>
+              <div>
+                <div class="mt">语音输入</div>
+                <div class="ms">直接说“每天晚上吃一片某某药”</div>
+              </div>
+              <div class="arrow">›</div>
+            </button>
+            <button class="entry-btn" onclick="openAdd('text')">
+              <div class="ic" style="background:#EFE9FD;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#6C4BB6" stroke-width="2"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg>
+              </div>
+              <div>
+                <div class="mt">文字录入</div>
+                <div class="ms">手动输入药名、剂量和服用时间</div>
+              </div>
+              <div class="arrow">›</div>
+            </button>
+          </div>
+          <div class="card">
             <div class="card-title">药品记录</div>
             <div id="familyMeds"></div>
           </div>
@@ -374,32 +411,50 @@
             <button class="mic-btn" onclick="startVoice()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>
             </button>
-            <div class="voice-hint">点击按钮开始说话</div>
+            <div class="voice-hint" id="voiceHint">点击按钮开始说话</div>
+            <div id="voiceRecBox" style="display:none;">
+              <div class="voice-hint" style="margin-bottom:12px;">已录 <span id="voiceRecTime" style="color:var(--orange);font-weight:700;">0 秒</span></div>
+              <button class="btn btn-primary" onclick="finishVoiceRecording()">说完了，开始识别</button>
+              <div style="height:10px;"></div>
+              <button class="btn btn-danger-ghost" onclick="stopVoiceRecording()">停止</button>
+            </div>
             <div class="bubble" style="background:#F1EEE8;color:var(--ink-2);font-size:16px;">
               可以这样说：<br>“我每天晚上吃一片阿司匹林”
             </div>
           </div>
 
-          <!-- 语音识别中 -->
+          <!-- 语音识别中（成功前不进入下一步） -->
           <div class="add-step" id="step-voice-loading" style="display:none;">
             <div class="loading-box">
               <div class="spinner"></div>
-              <div class="lt">正在听您说话…</div>
-              <div class="ls">请把话说完</div>
+              <div class="lt">正在识别，请稍候…</div>
+              <div class="ls">识别成功后会自动显示结果</div>
             </div>
+          </div>
+
+          <!-- 文字录入（仅家人端入口） -->
+          <div class="add-step" id="step-text" style="display:none;">
+            <div class="card">
+              <div class="card-title">请输入用药信息</div>
+              <div class="ls" style="margin-bottom:10px;">例如：每天晚上九点吃一片阿司匹林</div>
+              <textarea id="textInput" class="text-input" rows="4" placeholder="输入药品名称、每次剂量、服用时间"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="submitText()">解析这段文字</button>
+            <div style="height:10px;"></div>
+            <button class="btn btn-gray" onclick="setTab(addFrom)">取消</button>
           </div>
 
           <!-- 语音结果 -->
           <div class="add-step" id="step-voice-result" style="display:none;">
             <div class="bubble">
-              <div class="who">您说：</div>
-              “我每天晚上吃一片阿司匹林。”
+              <div class="who" id="vrWho">您说：</div>
+              <span id="vrSay"></span>
             </div>
             <div class="card">
               <div class="card-title">为您整理如下</div>
-              <div class="field-row"><span class="fk">药品</span><span class="fv">阿司匹林肠溶片 <span class="mini-tag tag-ok">已识别</span></span></div>
-              <div class="field-row"><span class="fk">每次剂量</span><span class="fv">1 片 <span class="mini-tag tag-ok">已识别</span></span></div>
-              <div class="field-row"><span class="fk">服用时间</span><span class="fv">每天晚上 18:00 <span class="mini-tag tag-ok">已识别</span></span></div>
+              <div class="field-row"><span class="fk">药品</span><span class="fv" id="vrName"></span></div>
+              <div class="field-row"><span class="fk">每次剂量</span><span class="fv" id="vrDose"></span></div>
+              <div class="field-row"><span class="fk">服用时间</span><span class="fv" id="vrTime"></span></div>
             </div>
             <button class="btn btn-ghost" style="margin-bottom:10px;" onclick="speakVoiceResult()">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4h3.5L12 18V6l-4.5 4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M17.8 6.8a7.4 7.4 0 0 1 0 10.4"/></svg>
@@ -408,7 +463,10 @@
             <div class="safety-note">确认后将按此方案启用提醒。如果和医生处方不一致，请先咨询医生或药师。</div>
             <button class="btn btn-primary" onclick="confirmVoice()">确认，启用提醒</button>
             <div style="height:10px;"></div>
-            <button class="btn btn-gray" onclick="showStep('voice',true)">重新说一遍</button>
+            <button class="btn btn-gray" id="vrRetry" onclick="retryInput()">重新说一遍</button>
+            <div id="vrTextSwitchWrap" style="display:none;margin-top:10px;">
+              <button class="btn btn-ghost" onclick="switchToText()">改用文字输入</button>
+            </div>
           </div>
         </section>
 
@@ -453,13 +511,39 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>
             </button>
             <div class="voice-hint">点击后说，例如“每次吃 10 丸，一天三次”</div>
+            <div id="planTextZone" style="margin-top:14px;border-top:1.5px dashed var(--line);padding-top:12px;">
+              <button class="btn btn-ghost" onclick="togglePlanText()">不方便说话？改用文字输入</button>
+              <div id="planTextBox" style="display:none;margin-top:10px;">
+                <textarea id="planTextInput" class="text-input" rows="3" placeholder="例如：每次吃 10 丸，一天三次，早中晚"></textarea>
+                <button class="btn btn-primary" onclick="submitPlanText()">解析这段文字</button>
+              </div>
+            </div>
           </div>
-          <div id="planStepListening" style="display:none;">
+          <!-- 阶段一：录音中 -->
+          <div id="planStepRecording" style="display:none;">
+            <button class="mic-btn recording" style="margin:18px auto 10px;" onclick="finishPlanRecording()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>
+            </button>
+            <div class="voice-hint">正在听您说话… <span id="planRecTime" style="color:var(--orange);font-weight:700;">0 秒</span></div>
+            <button class="btn btn-primary" onclick="finishPlanRecording()">说完了，开始识别</button>
+            <div style="height:10px;"></div>
+            <button class="btn btn-danger-ghost" onclick="stopPlanRecording()">停止</button>
+          </div>
+          <!-- 阶段二：识别中（成功前不进入下一步） -->
+          <div id="planStepRecognizing" style="display:none;">
             <div class="loading-box" style="padding:36px 0;">
               <div class="spinner"></div>
-              <div class="lt">正在听您说话…</div>
-              <div class="ls">请把话说完</div>
+              <div class="lt">正在识别，请稍候…</div>
+              <div class="ls">识别成功后会自动显示结果</div>
             </div>
+          </div>
+          <!-- 识别失败 -->
+          <div id="planStepError" style="display:none;">
+            <div class="bubble" style="border:2px solid #C0392B;">
+              <div class="who" style="color:#C0392B;">识别没有成功</div>
+              <span id="planErrMsg"></span>
+            </div>
+            <button class="btn btn-primary" onclick="setPlanStep('idle')">重新说一遍</button>
           </div>
           <div id="planStepResult" style="display:none;">
             <div class="bubble"><div class="who">您说：</div><span id="planSay"></span></div>
@@ -468,7 +552,7 @@
               <div class="field-row"><span class="fk">服用频次</span><span class="fv" id="planRFreq"></span></div>
               <div class="field-row"><span class="fk">服用时间</span><span class="fv" id="planRTimes"></span></div>
             </div>
-            <button class="btn btn-primary" onclick="confirmPlan()">确认无误，启用提醒</button>
+            <button class="btn btn-primary" id="planConfirmBtn" onclick="confirmPlan()">确认无误，启用提醒</button>
             <div style="height:10px;"></div>
             <button class="btn btn-gray" onclick="setPlanStep('idle')">重新说一遍</button>
           </div>
@@ -499,7 +583,6 @@ const state = {
     { date:'昨天', time:'08:00', med:'二甲双胍缓释片', dose:'1 片', status:'taken' },
     { date:'昨天', time:'08:00', med:'氨氯地平缓释片', dose:'1 片', status:'not_taken' },
   ],
-  eveningDone:false,
   nextId:4,
 };
 
@@ -547,51 +630,76 @@ function medLine(med){
 }
 
 /* ================= 首页 ================= */
-function eveningMeds(){
-  return state.meds.filter(m=>m.status==='confirmed' && m.times.includes('18:00'));
+/* 用药安排完全由已确认方案动态生成：按时间点分组 */
+function scheduleSlots(){
+  const map = {};
+  state.meds.filter(m=>m.status==='confirmed').forEach(m=>{
+    (m.times||[]).forEach(t=>{ (map[t]=map[t]||[]).push(m); });
+  });
+  return Object.keys(map).sort().map(t=>({ time:t, meds:map[t] }));
+}
+
+function slotTaken(time){
+  return state.records.some(r=>r.date==='今天' && r.time===time && r.status==='taken');
+}
+
+function periodLabel(t){
+  const h = parseInt(t,10);
+  if(h<11) return '早上';
+  if(h<13) return '中午';
+  if(h<17) return '下午';
+  if(h<20) return '晚上';
+  return '睡前';
+}
+
+function timeSpeak(t){
+  const [h,m] = t.split(':').map(Number);
+  const hh = h>12 ? h-12 : h;
+  return hh + ' 点' + (m===30 ? '半' : (m ? ' ' + m + ' 分' : ''));
 }
 
 function renderHome(){
-  const list = eveningMeds();
+  const slots = scheduleSlots();
+  const pendingSlots = slots.filter(s=>!slotTaken(s.time));
   const next = $('homeNext');
-  if(state.eveningDone){
+  if(!slots.length){
+    next.innerHTML = '<div class="done-card">还没有已确认的用药方案，请先录入药品</div>';
+  }else if(!pendingSlots.length){
     next.innerHTML = '<div class="done-card">今天的药都吃完了，真棒！</div>';
   }else{
+    const s = pendingSlots[0];
     next.innerHTML = `
       <div class="next-card">
-        <div class="t">下次用药 · 今天 18:00</div>
-        <div class="big">${list.length} 种药等着您</div>
-        <button class="btn" onclick="openReminder()">模拟到点提醒（演示）</button>
+        <div class="t">下次用药 · 今天 ${s.time}</div>
+        <div class="big">${s.meds.length} 种药等着您</div>
+        <button class="btn" onclick="openReminder('${s.time}')">模拟到点提醒（演示）</button>
       </div>`;
   }
 
-  const eveningHtml = list.length
-    ? list.map(m=>`<div>${medLine(m)}</div>`).join('')
-    : '<div>暂无已确认的药品</div>';
-  $('homeTimeline').innerHTML = `
+  $('homeTimeline').innerHTML = slots.length ? slots.map(s=>{
+    const taken = slotTaken(s.time);
+    return `
     <div class="timeline-item">
-      <div class="tl-time">08:00<small>早上</small></div>
+      <div class="tl-time">${s.time}<small>${periodLabel(s.time)}</small></div>
       <div class="tl-body">
-        <div class="tl-title">早间用药 <span class="chip chip-green">已服用</span></div>
-        <div class="tl-meds">二甲双胍缓释片 · 每次 1 片<div>氨氯地平缓释片 · 每次 1 片</div></div>
-      </div>
-    </div>
-    <div class="timeline-item">
-      <div class="tl-time">18:00<small>晚上</small></div>
-      <div class="tl-body">
-        <div class="tl-title">晚间用药 ${state.eveningDone
+        <div class="tl-title">${periodLabel(s.time)}用药 ${taken
           ? '<span class="chip chip-green">已服用</span>'
           : '<span class="chip chip-orange">待服用</span>'}</div>
-        <div class="tl-meds">${eveningHtml}</div>
+        <div class="tl-meds">${s.meds.map(m=>`<div>${medLine(m)}</div>`).join('')}</div>
       </div>
     </div>`;
+  }).join('') : '<div>暂无已确认的用药安排</div>';
 }
 
 /* ================= 提醒 ================= */
-function openReminder(){
-  const list = eveningMeds();
-  if(!list.length){ toast('当前没有已确认的晚间用药'); return; }
-  $('reminderMeds').innerHTML = list.map(m=>`
+let reminderSlot = null;
+
+function openReminder(time){
+  const slots = scheduleSlots();
+  reminderSlot = slots.find(s=>s.time===time && !slotTaken(s.time))
+    || slots.find(s=>!slotTaken(s.time));
+  if(!reminderSlot){ toast('当前没有待服用的用药安排'); return; }
+  $('reminderMeds').innerHTML = reminderSlot.meds.map(m=>`
     <div class="r-med">
       <div>
         <div class="rn">${m.name}</div>
@@ -600,28 +708,30 @@ function openReminder(){
       <div class="rq">${m.dose}</div>
     </div>`).join('');
   $('reminderOverlay').classList.add('show');
-  speak('现在是晚上 6 点，该吃药了。晚上的药：' +
-    list.map(m=> m.name + '，每次 ' + m.dose).join('；') +
+  speak('现在是' + periodLabel(reminderSlot.time) + timeSpeak(reminderSlot.time) + '，该吃药了。' +
+    periodLabel(reminderSlot.time) + '的药：' +
+    reminderSlot.meds.map(m=> m.name + '，每次 ' + m.dose).join('；') +
     '。请核对后点击已服用。');
 }
 
 function reminderAction(type){
   $('reminderOverlay').classList.remove('show');
   stopSpeak();
-  const list = eveningMeds();
+  const list = reminderSlot ? reminderSlot.meds : [];
+  const time = reminderSlot ? reminderSlot.time : '';
   if(type==='taken'){
-    list.forEach(m=>state.records.unshift({date:'今天',time:'18:00',med:m.name,dose:m.dose,status:'taken'}));
-    state.eveningDone = true;
+    list.forEach(m=>state.records.unshift({date:'今天',time,med:m.name,dose:m.dose,status:'taken'}));
     toast('已记录：您服用了 ' + list.length + ' 种药');
     speak('好的，已记录您服用了 ' + list.length + ' 种药');
   }else if(type==='snooze'){
     toast('好的，10 分钟后再提醒您');
     speak('好的，10 分钟后再提醒您');
   }else{
-    list.forEach(m=>state.records.unshift({date:'今天',time:'18:00',med:m.name,dose:m.dose,status:'not_taken'}));
+    list.forEach(m=>state.records.unshift({date:'今天',time,med:m.name,dose:m.dose,status:'not_taken'}));
     toast('已记录为暂未服用，家人可以查看到');
     speak('已记录为暂未服用，家人可以查看到');
   }
+  reminderSlot = null;
   renderAll();
 }
 
@@ -635,9 +745,10 @@ function recChip(s){
 function renderFamily(){
   const takenToday = state.records.filter(r=>r.date==='今天' && r.status==='taken').length;
   const pending = state.meds.filter(m=>m.status==='pending').length;
+  const leftToday = scheduleSlots().filter(s=>!slotTaken(s.time)).length;
   $('familySum').innerHTML = `
     <div class="sum-box"><div class="n" style="color:var(--primary-dark);">${takenToday}</div><div class="l">今日已服（次）</div></div>
-    <div class="sum-box"><div class="n" style="color:${state.eveningDone?'var(--primary-dark)':'var(--orange)'};">${state.eveningDone?'已完成':'未完成'}</div><div class="l">晚间用药</div></div>
+    <div class="sum-box"><div class="n" style="color:${leftToday?'var(--orange)':'var(--primary-dark)'};">${leftToday?'剩 '+leftToday+' 次':'已完成'}</div><div class="l">今日用药</div></div>
     <div class="sum-box"><div class="n" style="color:${pending?'var(--orange)':'var(--primary-dark)'};">${pending}</div><div class="l">待确认药品</div></div>`;
 
   $('familyMeds').innerHTML = state.meds.map(m=>`
@@ -709,17 +820,59 @@ function renderDetail(){
 }
 
 /* ================= 添加药品 ================= */
+let inputMode = 'voice';   /* voice | text：文字录入仅家人端提供 */
+let addFrom = 'home';      /* 记录从哪个 tab 进入录入，结束后返回 */
+
 function openAdd(method){
+  inputMode = method === 'text' ? 'text' : 'voice';
+  addFrom = currentTab;
+  if(method === 'text') $('textInput').value = '';
   addStepStack = [method];
   showStep(method, true);
   showScreen('screen-add');
+}
+
+function submitText(){
+  const t = $('textInput').value.trim();
+  if(!t){ toast('请先输入文字'); return; }
+  fillVoiceResult(t);
+}
+
+function retryInput(){
+  if(inputMode === 'text') showStep('text', true);
+  else showStep('voice', true);
+}
+
+/* 家人端二级确认：可切换到文字输入修改内容 */
+function switchToText(){
+  $('textInput').value = voiceParsed && voiceParsed.say ? voiceParsed.say : '';
+  inputMode = 'text';
+  showStep('text');
+}
+
+function togglePlanText(){
+  const box = $('planTextBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function submitPlanText(){
+  const t = $('planTextInput').value.trim();
+  if(!t){ toast('请先输入文字'); return; }
+  planFromText(t);
 }
 
 function speakPhotoResult(){
   speak('识别结果：阿托伐他汀钙片，20毫克乘7片。说明书用法为口服，常用量每晚1片。您的处方剂量和服用时间还不明确，需要确认。识别不等于确认。');
 }
 function speakVoiceResult(){
-  speak('您说：我每天晚上吃一片阿司匹林。为您整理如下：阿司匹林肠溶片，每次1片，每天晚上6点。确认后将按此方案启用提醒。');
+  if(!voiceParsed) return;
+  const p = voiceParsed;
+  let t = '您说：' + p.say + '。';
+  t += p.name ? '药品：' + p.name + '。' : '药品名称没有识别出来，需要确认。';
+  t += p.dose ? '每次' + p.dose + '。' : '每次吃多少没有听清，需要确认。';
+  t += p.times.length ? '服用时间：' + (p.timeLabels || p.times).join('、') + '。' : '服用时间没有听清，请点重新说一遍，再说一次。';
+  t += '确认后将按此方案启用提醒。';
+  speak(t);
 }
 
 function showStep(name, reset){
@@ -730,14 +883,15 @@ function showStep(name, reset){
   $('step-'+name).style.display='block';
   $('addTitle').textContent = {
     photo:'拍照识别', 'photo-loading':'拍照识别', 'photo-result':'核对识别结果',
-    voice:'语音输入', 'voice-loading':'语音输入', 'voice-result':'核对语音内容',
+    voice:'语音输入', 'voice-loading':'语音输入', 'voice-result':'核对录入内容',
+    text:'文字录入',
   }[name] || '添加药品';
 }
 
 function addBack(){
   addStepStack.pop();
   const prev = addStepStack[addStepStack.length-1];
-  if(!prev){ setTab('home'); return; }
+  if(!prev){ setTab(addFrom); return; }
   showStep(prev, true);
 }
 
@@ -763,21 +917,303 @@ function savePhotoMed(fillNow){
   }
 }
 
-/* --- 语音 --- */
-function startVoice(){
+/* --- 语音（真实录音 + 百度识别） --- */
+let rec = null;
+let voiceRecording = false;
+let voiceParsed = null;
+
+async function recStart(){
+  const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate:16000 });
+  const src = ctx.createMediaStreamSource(stream);
+  const proc = ctx.createScriptProcessor(4096, 1, 1);
+  const chunks = [];
+  proc.onaudioprocess = e=>{
+    const f = e.inputBuffer.getChannelData(0);
+    const p = new Int16Array(f.length);
+    for(let i=0;i<f.length;i++){ const s=Math.max(-1,Math.min(1,f[i])); p[i]=s<0?s*0x8000:s*0x7FFF; }
+    chunks.push(p);
+  };
+  src.connect(proc); proc.connect(ctx.destination);
+  rec = { stream, ctx, proc, chunks };
+}
+
+function recStop(){
+  if(!rec) return { b64:'', len:0 };
+  const { stream, ctx, proc, chunks } = rec; rec = null;
+  proc.disconnect();
+  const total = chunks.reduce((a,c)=>a+c.length,0);
+  const all = new Int16Array(total); let off = 0;
+  for(const c of chunks){ all.set(c,off); off += c.length; }
+  const bytes = new Uint8Array(all.buffer);
+  let bin = '';
+  for(let i=0;i<bytes.length;i+=8192) bin += String.fromCharCode.apply(null, bytes.subarray(i,i+8192));
+  stream.getTracks().forEach(t=>t.stop());
+  ctx.close();
+  return { b64: btoa(bin), len: total*2 };
+}
+
+async function callASR(b64, len){
+  const r = await fetch('/asr', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ speech:b64, len }) });
+  return r.json();
+}
+
+const CN_NUM = { '一':1,'两':2,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10 };
+function cn2num(s){
+  if(/^\d+$/.test(s)) return s;
+  if(s==='十') return '10';
+  if(s.length===1) return String(CN_NUM[s] || s);
+  if(s[0]==='十') return '1' + (CN_NUM[s[1]] || '');
+  if(s.length===2 && s[1]==='十') return String((CN_NUM[s[0]]||1)*10);
+  if(s.length===3 && s[1]==='十') return String((CN_NUM[s[0]]||1)*10 + (CN_NUM[s[2]]||0));
+  return s;
+}
+
+/* 时间提取：优先识别说出口的具体钟点；只说模糊时段时按常规推断并明确标注；都没有则不猜 */
+function parseTimes(text){
+  const times = []; const labels = [];
+  const re = /([0-9]+|[一二两三四五六七八九十]+)\s*点\s*(半|(?:[0-9]+|[一二两三四五六七八九十]+)\s*分)?/g;
+  let m;
+  while((m = re.exec(text))){
+    let h = parseInt(cn2num(m[1]), 10);
+    if(isNaN(h) || h < 1 || h > 23) continue;
+    let min = 0;
+    if(m[2] === '半') min = 30;
+    else if(m[2]){
+      const mm = parseInt(cn2num(m[2].replace(/\s*分$/, '')), 10);
+      if(!isNaN(mm) && mm < 60) min = mm;
+    }
+    const around = text.slice(Math.max(0, m.index - 5), m.index + m[0].length + 4);
+    if(h < 12 && /晚上|晚间|夜里|睡前|下午/.test(around)) h += 12;
+    const t = String(h).padStart(2,'0') + ':' + String(min).padStart(2,'0');
+    times.push(t);
+    labels.push(m[0].replace(/\s+/g,'') + '（' + t + '）');
+  }
+  if(times.length) return { times, labels, clear:true };
+  const fallback = [];
+  if(/早中晚/.test(text)){
+    fallback.push(['08:00','早上（按常规 08:00 理解）'],['12:00','中午（按常规 12:00 理解）'],['18:00','晚上（按常规 18:00 理解）']);
+  }else{
+    if(/早上|早晨|上午|早饭|早晚/.test(text)) fallback.push(['08:00','早上（按常规 08:00 理解）']);
+    if(/中午|午饭/.test(text)) fallback.push(['12:00','中午（按常规 12:00 理解）']);
+    if(/睡前/.test(text)) fallback.push(['21:00','睡前（按常规 21:00 理解）']);
+    else if(/晚上|晚饭后|下午|早晚/.test(text)) fallback.push(['18:00','晚上（按常规 18:00 理解）']);
+  }
+  if(fallback.length) return { times:fallback.map(f=>f[0]), labels:fallback.map(f=>f[1]), clear:false, guessed:true };
+  return { times:[], labels:[], clear:false, guessed:false };
+}
+
+/* 常规药品库：通用名 ← 商品名/简称/常见同音误读。覆盖老年慢病常用药 */
+const DRUG_DB = [
+  /* 心脑血管 · 抗血小板/抗凝 */
+  { name:'阿司匹林肠溶片', keys:['阿司匹林','阿斯匹林','拜阿司匹灵','拜阿司匹林'] },
+  { name:'氯吡格雷片', keys:['氯吡格雷','波立维','泰嘉'] },
+  { name:'替格瑞洛片', keys:['替格瑞洛','倍林达'] },
+  { name:'华法林钠片', keys:['华法林'] },
+  { name:'利伐沙班片', keys:['利伐沙班','拜瑞妥'] },
+  { name:'达比加群酯胶囊', keys:['达比加群','泰毕全'] },
+  /* 降压 */
+  { name:'氨氯地平缓释片', keys:['氨氯地平','络活喜'] },
+  { name:'硝苯地平控释片', keys:['硝苯地平','拜新同','心痛定'] },
+  { name:'缬沙坦胶囊', keys:['缬沙坦','代文'] },
+  { name:'氯沙坦钾片', keys:['氯沙坦','科素亚'] },
+  { name:'厄贝沙坦片', keys:['厄贝沙坦','安博维'] },
+  { name:'替米沙坦片', keys:['替米沙坦'] },
+  { name:'培哚普利片', keys:['培哚普利','雅施达'] },
+  { name:'贝那普利片', keys:['贝那普利','洛汀新'] },
+  { name:'卡托普利片', keys:['卡托普利'] },
+  { name:'美托洛尔缓释片', keys:['美托洛尔','倍他乐克'] },
+  { name:'比索洛尔片', keys:['比索洛尔','康忻'] },
+  { name:'吲达帕胺片', keys:['吲达帕胺'] },
+  { name:'氢氯噻嗪片', keys:['氢氯噻嗪','双氢克尿噻'] },
+  { name:'呋塞米片', keys:['呋塞米','速尿'] },
+  { name:'螺内酯片', keys:['螺内酯','安体舒通'] },
+  { name:'复方利血平片', keys:['复方利血平','降压0号','降压零号'] },
+  /* 降糖 */
+  { name:'二甲双胍缓释片', keys:['二甲双胍','格华止'] },
+  { name:'阿卡波糖片', keys:['阿卡波糖','拜唐苹','拜糖平'] },
+  { name:'格列美脲片', keys:['格列美脲','亚莫利'] },
+  { name:'格列齐特缓释片', keys:['格列齐特','达美康'] },
+  { name:'格列吡嗪片', keys:['格列吡嗪','瑞易宁'] },
+  { name:'瑞格列奈片', keys:['瑞格列奈','诺和龙'] },
+  { name:'西格列汀片', keys:['西格列汀','捷诺维'] },
+  { name:'达格列净片', keys:['达格列净','安达唐'] },
+  { name:'恩格列净片', keys:['恩格列净','欧唐静'] },
+  /* 调脂 */
+  { name:'阿托伐他汀钙片', keys:['阿托伐他汀','立普妥','阿乐'] },
+  { name:'瑞舒伐他汀钙片', keys:['瑞舒伐他汀','可定'] },
+  { name:'辛伐他汀片', keys:['辛伐他汀','舒降之'] },
+  { name:'普伐他汀钠片', keys:['普伐他汀'] },
+  { name:'非诺贝特胶囊', keys:['非诺贝特','力平之'] },
+  /* 冠心病/中成药 */
+  { name:'复方丹参滴丸', keys:['复方丹参','丹参滴丸','丹参'] },
+  { name:'单硝酸异山梨酯片', keys:['单硝酸异山梨酯','欣康','依姆多'] },
+  { name:'硝酸甘油片', keys:['硝酸甘油'] },
+  { name:'麝香保心丸', keys:['麝香保心'] },
+  { name:'通心络胶囊', keys:['通心络'] },
+  { name:'地高辛片', keys:['地高辛'] },
+  { name:'沙库巴曲缬沙坦钠片', keys:['沙库巴曲','诺欣妥'] },
+  /* 消化系统 */
+  { name:'奥美拉唑肠溶胶囊', keys:['奥美拉唑','洛赛克'] },
+  { name:'泮托拉唑钠肠溶片', keys:['泮托拉唑'] },
+  { name:'雷贝拉唑钠片', keys:['雷贝拉唑'] },
+  { name:'法莫替丁片', keys:['法莫替丁'] },
+  { name:'多潘立酮片', keys:['多潘立酮','吗丁啉'] },
+  { name:'莫沙必利片', keys:['莫沙必利'] },
+  /* 呼吸 */
+  { name:'孟鲁司特钠片', keys:['孟鲁司特','顺尔宁'] },
+  { name:'布地奈德吸入剂', keys:['布地奈德'] },
+  { name:'沙丁胺醇气雾剂', keys:['沙丁胺醇','万托林'] },
+  { name:'氨溴索片', keys:['氨溴索','沐舒坦'] },
+  /* 骨骼关节 */
+  { name:'碳酸钙D3片', keys:['碳酸钙','钙尔奇'] },
+  { name:'阿仑膦酸钠片', keys:['阿仑膦酸','福善美'] },
+  { name:'氨基葡萄糖胶囊', keys:['氨基葡萄糖','氨糖','维骨力'] },
+  { name:'双氯芬酸钠缓释片', keys:['双氯芬酸','扶他林'] },
+  { name:'塞来昔布胶囊', keys:['塞来昔布','西乐葆'] },
+  { name:'布洛芬胶囊', keys:['布洛芬','布洛分','布洛纷','不洛芬','步洛芬','芬必得','芬必德'] },
+  /* 神经/睡眠 */
+  { name:'多奈哌齐片', keys:['多奈哌齐','安理申'] },
+  { name:'美金刚片', keys:['美金刚'] },
+  { name:'艾司唑仑片', keys:['艾司唑仑','舒乐安定'] },
+  { name:'阿普唑仑片', keys:['阿普唑仑','佳静安定'] },
+  { name:'唑吡坦片', keys:['唑吡坦','思诺思'] },
+  { name:'倍他司汀片', keys:['倍他司汀','敏使朗'] },
+  /* 其他慢病 */
+  { name:'左甲状腺素钠片', keys:['左甲状腺素','优甲乐'] },
+  { name:'别嘌醇片', keys:['别嘌醇'] },
+  { name:'非布司他片', keys:['非布司他'] },
+  { name:'氯雷他定片', keys:['氯雷他定','开瑞坦'] },
+  { name:'西替利嗪片', keys:['西替利嗪','仙特明'] },
+];
+
+/* 药名匹配：先已有档案，再常规药库（最长关键词优先，避免短词抢配） */
+function matchDrug(text){
+  for(const m of state.meds){
+    if(text.includes(m.name) || text.includes(m.name.slice(0,4))) return m.name;
+  }
+  let best = ''; let bestLen = 0;
+  for(const d of DRUG_DB){
+    for(const k of d.keys){
+      if(text.includes(k) && k.length > bestLen){ best = d.name; bestLen = k.length; }
+    }
+  }
+  return best;
+}
+
+function parseVoice(text){
+  const doseM = text.match(/([0-9]+|[一二两三四五六七八九十]+)\s*(片|丸|粒|颗|袋)/);
+  const dose = doseM ? cn2num(doseM[1]) + ' ' + doseM[2] : '';
+  const t = parseTimes(text);
+  const freqM = text.match(/(?:一天|每天|每日)\s*([0-9一二三])\s*次/);
+  const freq = freqM ? ('每天 ' + cn2num(freqM[1]) + ' 次') : (t.times.length ? ('每天 ' + t.times.length + ' 次') : '');
+  return { dose, times:t.times, timeLabels:t.labels, timeClear:t.clear, timeGuessed:!!t.guessed, freq, name: matchDrug(text) };
+}
+
+let voiceTimer = null;
+let voiceSecs = 0;
+
+/* 阶段一：开始录音 */
+async function startVoice(){
+  if(voiceRecording) return;
+  const btn = document.querySelector('#step-voice .mic-btn');
+  try{ await recStart(); }
+  catch(e){ toast('无法使用麦克风，使用示例演示'); fillVoiceResult('我每天晚上吃一片阿司匹林'); return; }
+  voiceRecording = true;
+  voiceSecs = 0;
+  $('voiceRecTime').textContent = '0 秒';
+  btn.classList.add('recording');
+  $('voiceHint').textContent = '正在听您说话…';
+  $('voiceRecBox').style.display = 'block';
+  clearInterval(voiceTimer);
+  voiceTimer = setInterval(()=>{
+    voiceSecs++;
+    $('voiceRecTime').textContent = voiceSecs + ' 秒';
+    if(voiceSecs >= 30) finishVoiceRecording();
+  }, 1000);
+}
+
+/* 停止（取消本次录音） */
+function stopVoiceRecording(){
+  if(voiceRecording){ voiceRecording = false; try{ recStop(); }catch(e){} }
+  clearInterval(voiceTimer);
+  resetVoiceIdle();
+}
+
+function resetVoiceIdle(){
+  const btn = document.querySelector('#step-voice .mic-btn');
+  if(btn) btn.classList.remove('recording');
+  $('voiceHint').textContent = '点击按钮开始说话';
+  $('voiceRecBox').style.display = 'none';
+}
+
+/* 录音结束 → 阶段二：识别。只有识别成功才进入结果页 */
+async function finishVoiceRecording(){
+  if(!voiceRecording) return;
+  voiceRecording = false;
+  clearInterval(voiceTimer);
+  const { b64, len } = recStop();
+  resetVoiceIdle();
+  if(!len){ toast('没有录到声音，请重新说一遍'); return; }
   showStep('voice-loading');
-  setTimeout(()=>{ showStep('voice-result'); speakVoiceResult(); }, 1600);
+  try{
+    const r = await callASR(b64, len);
+    if(r.ok && r.text){ fillVoiceResult(r.text); }
+    else{ showVoiceError(r.msg || ('识别出错（错误码 ' + (r.err_no || '未知') + '）')); }
+  }catch(e){ showVoiceError('识别服务暂时不可用，请稍后重试'); }
+}
+
+function showVoiceError(msg){
+  toast(msg);
+  showStep('voice', true);
+}
+
+function setField(id, val){
+  $(id).innerHTML = val
+    ? val + ' <span class="mini-tag tag-ok">已识别</span>'
+    : '不明确 <span class="mini-tag tag-warn">待确认</span>';
+}
+
+function fillVoiceResult(text){
+  console.log('ASR raw text:', text);
+  voiceParsed = parseVoice(text);
+  voiceParsed.say = text;
+  $('vrWho').textContent = inputMode === 'text' ? '您输入：' : '您说：';
+  $('vrRetry').textContent = inputMode === 'text' ? '重新输入' : '重新说一遍';
+  $('vrTextSwitchWrap').style.display = addFrom === 'family' ? 'block' : 'none';
+  $('vrSay').textContent = '“' + text + '”';
+  setField('vrName', voiceParsed.name);
+  setField('vrDose', voiceParsed.dose);
+  if(voiceParsed.timeClear){
+    $('vrTime').innerHTML = voiceParsed.timeLabels.join('、') + ' <span class="mini-tag tag-ok">已识别</span>';
+  }else if(voiceParsed.timeGuessed){
+    $('vrTime').innerHTML = voiceParsed.timeLabels.join('、') + ' <span class="mini-tag tag-warn">按常规理解，不对请重说</span>';
+  }else{
+    setField('vrTime', '');
+    toast('没有听清服用时间，请重新说一遍');
+  }
+  showStep('voice-result');
+  if(inputMode === 'text') stopSpeak();
+  else speakVoiceResult();
 }
 
 function confirmVoice(){
+  const p = voiceParsed || {};
+  const complete = p.name && p.dose && p.times && p.times.length;
   state.meds.push({
-    id: state.nextId++, name:'阿司匹林肠溶片', spec:'100mg × 30 片',
-    dose:'1 片', freq:'每天 1 次', times:['18:00'],
-    note:'每天晚上服用', source:'语音记录（本人确认）', status:'confirmed',
+    id: state.nextId++,
+    name: p.name || '（语音录入，药名待确认）',
+    spec: '',
+    dose: p.dose || '',
+    freq: p.freq || (p.times && p.times.length ? ('每天 ' + p.times.length + ' 次') : ''),
+    times: p.times || [],
+    note: p.say || '',
+    source: (inputMode === 'text' ? '文字录入' : '语音记录') + (complete ? '（本人确认）' : '（信息不全）'),
+    status: complete ? 'confirmed' : 'pending',
   });
   renderAll();
-  toast('已记录：阿司匹林肠溶片，每天晚上 1 片');
-  setTab('home');
+  toast(complete ? ('已记录：' + p.name + '，' + p.dose) : '信息不完整，已存档，暂未启用提醒');
+  setTab(addFrom);
 }
 
 /* ================= 语音播报 ================= */
@@ -807,7 +1243,9 @@ function planDemo(m){
 
 function setPlanStep(s){
   $('planStepIdle').style.display = s==='idle' ? 'block' : 'none';
-  $('planStepListening').style.display = s==='listening' ? 'block' : 'none';
+  $('planStepRecording').style.display = s==='recording' ? 'block' : 'none';
+  $('planStepRecognizing').style.display = s==='recognizing' ? 'block' : 'none';
+  $('planStepError').style.display = s==='error' ? 'block' : 'none';
   $('planStepResult').style.display = s==='result' ? 'block' : 'none';
 }
 
@@ -816,22 +1254,98 @@ function openPlan(medId){
   planData = null;
   const m = state.meds.find(x=>x.id===medId);
   $('planMedName').textContent = '确认「' + m.name + '」的用药方案';
+  /* 文字输入仅家人端可见：老人端（今天）的二级确认只保留语音 */
+  $('planTextZone').style.display = currentTab === 'family' ? 'block' : 'none';
+  $('planTextBox').style.display = 'none';
   setPlanStep('idle');
   $('planOverlay').classList.add('show');
 }
 
-function startPlanVoice(){
-  setPlanStep('listening');
-  setTimeout(()=>{
-    const m = state.meds.find(x=>x.id===planMedId);
-    planData = planDemo(m);
-    $('planSay').textContent = '“' + planData.say + '”';
-    $('planRDose').innerHTML = planData.dose + ' <span class="mini-tag tag-ok">已识别</span>';
-    $('planRFreq').innerHTML = planData.freq + ' <span class="mini-tag tag-ok">已识别</span>';
-    $('planRTimes').innerHTML = planData.times.join('、') + ' <span class="mini-tag tag-ok">已识别</span>';
-    setPlanStep('result');
-    speak('识别结果：每次 ' + planData.dose + '，' + planData.freq + '。确认无误请点确认。');
-  }, 1500);
+let planRecording = false;
+let planTimer = null;
+let planSecs = 0;
+
+/* 阶段一：开始录音 */
+async function startPlanVoice(){
+  if(planRecording) return;
+  try{ await recStart(); }
+  catch(e){ toast('无法使用麦克风，使用示例演示'); planDemoFill(); return; }
+  planRecording = true;
+  planSecs = 0;
+  $('planRecTime').textContent = '0 秒';
+  setPlanStep('recording');
+  clearInterval(planTimer);
+  planTimer = setInterval(()=>{
+    planSecs++;
+    $('planRecTime').textContent = planSecs + ' 秒';
+    if(planSecs >= 30) finishPlanRecording();
+  }, 1000);
+}
+
+/* 停止（取消本次录音） */
+function stopPlanRecording(){
+  if(planRecording){ planRecording = false; try{ recStop(); }catch(e){} }
+  clearInterval(planTimer);
+  stopSpeak();
+  setPlanStep('idle');
+}
+
+/* 录音结束 → 阶段二：识别。只有识别成功才进入结果页 */
+async function finishPlanRecording(){
+  if(!planRecording) return;
+  planRecording = false;
+  clearInterval(planTimer);
+  const { b64, len } = recStop();
+  if(!len){ toast('没有录到声音，请重新说一遍'); setPlanStep('idle'); return; }
+  setPlanStep('recognizing');
+  try{
+    const r = await callASR(b64, len);
+    if(r.ok && r.text){ planFromText(r.text); }
+    else{ showPlanError(r.msg || ('识别出错（错误码 ' + (r.err_no || '未知') + '）')); }
+  }catch(e){ showPlanError('识别服务暂时不可用，请稍后重试'); }
+}
+
+function showPlanError(msg){
+  $('planErrMsg').textContent = msg;
+  setPlanStep('error');
+  speak('识别没有成功，请点重新说一遍，再试一次。');
+}
+
+function planDemoFill(){
+  const m = state.meds.find(x=>x.id===planMedId);
+  const d = planDemo(m);
+  planData = { dose:d.dose, freq:d.freq, times:d.times, timeLabels:d.times.slice(), timeClear:true };
+  $('planSay').textContent = '“' + d.say + '”';
+  fillPlanFields();
+}
+
+function planFromText(text){
+  console.log('ASR raw text (plan):', text);
+  const p = parseVoice(text);
+  planData = { dose:p.dose, freq:p.freq, times:p.times, timeLabels:p.timeLabels, timeClear:p.timeClear };
+  $('planSay').textContent = '“' + text + '”';
+  fillPlanFields();
+}
+
+function fillPlanFields(){
+  const ok = v => v + ' <span class="mini-tag tag-ok">已识别</span>';
+  const bad = '不明确 <span class="mini-tag tag-warn">待确认</span>';
+  $('planRDose').innerHTML = planData.dose ? ok(planData.dose) : bad;
+  $('planRFreq').innerHTML = planData.freq ? ok(planData.freq) : bad;
+  if(planData.times.length){
+    const tag = planData.timeClear
+      ? '<span class="mini-tag tag-ok">已识别</span>'
+      : '<span class="mini-tag tag-warn">按常规理解，不对请重说</span>';
+    $('planRTimes').innerHTML = planData.timeLabels.join('、') + ' ' + tag;
+  }else{
+    $('planRTimes').innerHTML = bad;
+  }
+  const complete = !!(planData.dose && planData.freq && planData.times.length);
+  $('planConfirmBtn').disabled = !complete;
+  setPlanStep('result');
+  if(!planData.times.length) speak('服用时间没有听清，请点重新说一遍，再说一次。');
+  else if(complete) speak('识别结果：每次 ' + planData.dose + '，' + planData.freq + '，时间 ' + planData.timeLabels.join('、') + '。确认无误请点确认。');
+  else speak('部分信息没有听清，请点重新说一遍。');
 }
 
 function closePlan(){
